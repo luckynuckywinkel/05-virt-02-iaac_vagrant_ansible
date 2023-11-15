@@ -153,6 +153,50 @@ node.vm.provision "shell", inline: "/bin/bash /tmp/show_ip.sh", run: "always", p
 
 - Отлично. Что ж. Запустим наш плэйбук:
 
+![playbook](img/5.JPG)  
+
+- Плэйбук я тоже чуть отредактировал и выглядит он вот так:
+
+```
+---
+
+  - hosts: server1
+    become: yes
+    become_user: root
+    remote_user: vagrant
+
+    tasks:
+      - name: Checking DNS
+        command: host -t A google.com
+
+      - name: Installing tools
+        apt: >
+          package={{ item }}
+          state=present
+          update_cache=yes
+        with_items:
+          - git
+          - curl
+
+      - name: Installing docker
+        shell: curl -fsSL get.docker.com -o get-docker.sh && chmod +x get-docker.sh && ./get-docker.sh
+
+      - name: Add the current user to docker group
+        user: name=vagrant append=yes groups=docker
+
+
+      - name: Do docker version
+        shell: "docker --version"
+        register: docker
+
+      - name: Display docker version
+        debug:
+          var: docker.stdout_lines
+```
+
+- Я убрал все, что касается ssh-ключей, т.к. я туда уже положил нужный мне ключ и добавил таску по выводу версии доккера на удаленной машине.
+
+
 
 
 
