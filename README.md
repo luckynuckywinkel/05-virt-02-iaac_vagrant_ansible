@@ -80,4 +80,49 @@ end
 
 - Данной конфигурации мне вполне хватало для разворота одной машины. Для разворота нескольких машин я использовал несколько одинаковых модулей.
 
+- Ввиду особенностей моей конфигурации, я позволил себе изменить представленную конфигурацию вагрант-файла. Я закомментил некоторые не нужные переменные и параметры и удалил модуль провизионера, т.к. ансибл, как я сказал ранее, живет у меня на другой машине. Далее - измененный код с пояснениями:
+
+```
+# -*- mode: ruby -*-
+
+#ISO = "bento/ubuntu-20.04" - убрал переменную, т.к. подумал, что пусть он закачает дистрибутив во время установки
+#NET = "192.168.56." - убрал, так как всегда прокидываю бриджом машину в рабочую сеть и позволяю dhcp сделать свое дело. В целом, можно было бы оставить и создать третий сетевой интерфейс
+DOMAIN = ".netology"
+HOST_PREFIX = "server"
+#INVENTORY_PATH = "../ansible/inventory" - ансибл на другой машине
+
+servers = [
+  {
+    :hostname => HOST_PREFIX + "1" + DOMAIN,
+    #:ip => NET + "11",
+    :ssh_host => "20011",
+    :ssh_vm => "22",
+    :ram => 1024,
+    :core => 1
+  }
+]
+
+Vagrant.configure(2) do |config|
+  #config.vm.synced_folder ".", "/vagrant", disabled: false - здесь я не совсем понял, зачем мы синхронизируем папку с хоста на вм, но, возможно, это правило хорошего тона..объясните? 
+  servers.each do |machine|
+    config.vm.define machine[:hostname] do |node|
+      node.vm.box = "bento/ubuntu-20.04" - закачиваем образ
+      node.vm.hostname = machine[:hostname]
+      node.vm.network "public_network", bridge: "Intel(R) Ethernet Connection I219-LM" - бридж на сетевой адаптер с dhcp
+      node.vm.network :forwarded_port, guest: machine[:ssh_vm], host: machine[:ssh_host]
+      node.vm.provider "virtualbox" do |vb|
+        vb.customize ["modifyvm", :id, "--memory", machine[:ram]]
+        vb.customize ["modifyvm", :id, "--cpus", machine[:core]]
+        vb.name = machine[:hostname]
+      end
+      
+    end
+  end
+end
+```
+
+- Собственно, все развернулось:
+
+
+
 
